@@ -201,6 +201,44 @@ def _parse_pgarray(val):
     return []
 
 
+@app.route("/data/responses.csv")
+def get_responses_csv():
+    """Export all responses as a CSV file."""
+    r = supabase_request("GET", "", {"order": "submitted_at.desc", "limit": "1000"})
+    if not isinstance(r, list):
+        return "No data", 404
+
+    import csv, io
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "overall", "difficulty", "length", "strengthen", "favorite",
+                      "best_day", "worst_day", "format", "role", "open_feedback", "submitted_at", "ip"])
+    for row in r:
+        writer.writerow([
+            row.get("id", ""),
+            row.get("overall", ""),
+            row.get("difficulty", ""),
+            row.get("length", ""),
+            "; ".join(_parse_pgarray(row.get("strengthen", []))),
+            row.get("favorite", ""),
+            row.get("best_day", ""),
+            row.get("worst_day", ""),
+            "; ".join(_parse_pgarray(row.get("format", []))),
+            row.get("role", ""),
+            row.get("open_feedback", ""),
+            row.get("submitted_at", ""),
+            row.get("ip", ""),
+        ])
+
+    csv_bytes = output.getvalue().encode("utf-8-sig")
+    from flask import Response
+    return Response(
+        csv_bytes,
+        mimetype="text/csv; charset=utf-8-sig",
+        headers={"Content-Disposition": "attachment; filename=ai-coach-feedback.csv"}
+    )
+
+
 @app.route("/data/responses")
 def get_responses():
     if MEMORY_ONLY:
