@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 app = Flask(__name__, static_folder="static")
 
 # ── Supabase config ──
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://db.emvtxprnsrycfevpkfym.supabase.co")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://emvtxprnsrycfevpkfym.supabase.co")
 SUPABASE_ANON_KEY = os.environ.get(
     "SUPABASE_ANON_KEY",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
