@@ -81,9 +81,9 @@ tr:hover td{background:rgba(25,21,18,0.04)}
   <div class="chart-grid" id="charts"></div>
 
   <!-- Raw responses table -->
-  <div class="chart-box chart-full" id="raw-table" style="display:none;">
-    <h3>📋 逐筆回覆 <span class="tag-sm">(最近 50 筆)</span></h3>
-    <div class="table-wrap" id="table-body"></div>
+  <div class="chart-box chart-full" id="raw-table">
+    <h3>💬 逐筆回覆含「在想說的話」 <span class="tag-sm">(最近 50 筆)</span></h3>
+    <div class="table-wrap" id="table-body"><p style="color:#7A7165;text-align:center;padding:20px;">載入中⋯</p></div>
   </div>
 </div>
 
@@ -119,6 +119,14 @@ function loadData() {
       document.getElementById('header-meta').textContent = '⚠️ 無法連線到伺服器';
       document.querySelector('.stats-row').innerHTML =
         '<div class="refresh-note" style="grid-column:1/-1;">⚠️ 伺服器未啟動？請執行 <code>python3 server.py</code></div>';
+    });
+
+  // Load raw responses with open_feedback
+  fetch('/data/responses')
+    .then(r => r.json())
+    .then(renderRawResponses)
+    .catch(() => {
+      document.getElementById('table-body').innerHTML = '<p style="color:#7A7165;text-align:center;padding:20px;">⚠️ 無法載入回應資料</p>';
     });
 }
 
@@ -262,6 +270,62 @@ function renderDaysChart(ctx, data, id) {
       }
     }
   });
+}
+
+function renderRawResponses(rows) {
+  const container = document.getElementById('table-body');
+  if (!Array.isArray(rows) || rows.length === 0) {
+    container.innerHTML = '<p style="color:#7A7165;text-align:center;padding:20px;">📭 尚無回覆資料</p>';
+    return;
+  }
+
+  const roleLabels = {
+    'ee':'EE','power':'Power','rf':'RF/天線','pcb':'PCB','audio':'Audio',
+    'camera':'Camera','display':'Display','me':'機構','qa':'QA','pm':'PM','other':'其他'
+  };
+  const diffLabels = {
+    'too-easy':'太簡單','just-right':'適中','too-hard':'太難','mixed':'不穩定'
+  };
+  const lenLabels = {
+    'too-short':'太短','just-right':'適中','too-long':'太長','varies':'不一定'
+  };
+
+  let html = `<table>
+    <tr>
+      <th>#</th>
+      <th>⭐</th>
+      <th>難度</th>
+      <th>長度</th>
+      <th>最喜歡</th>
+      <th>角色</th>
+      <th>💬 在想說的話</th>
+      <th>時間</th>
+    </tr>`;
+
+  rows.slice(0, 50).forEach((r, i) => {
+    const stars = '★'.repeat(r.overall || 0) + '☆'.repeat(5 - (r.overall || 0));
+    const diff = diffLabels[r.difficulty] || r.difficulty || '-';
+    const len = lenLabels[r.length] || r.length || '-';
+    const favMap = {'oneline':'一句話','why':'為什麼有用','steps':'步驟','practice':'🎯練習','tip':'💡撇步','safety':'🔒安全'};
+    const fav = favMap[r.favorite] || r.favorite || '-';
+    const role = roleLabels[r.role] || r.role || '-';
+    const feedback = (r.open_feedback || '').trim();
+    const time = r.submitted_at ? new Date(r.submitted_at).toLocaleString('zh-TW', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+
+    html += `<tr>
+      <td>${r.id || i+1}</td>
+      <td style="color:#D63A0F;">${stars}</td>
+      <td>${diff}</td>
+      <td>${len}</td>
+      <td>${fav}</td>
+      <td>${role}</td>
+      <td class="feedback-text">${feedback || '<span style="color:#C8BFB0;">—</span>'}</td>
+      <td style="color:#7A7165;font-size:12px;white-space:nowrap;">${time}</td>
+    </tr>`;
+  });
+
+  html += '</table>';
+  container.innerHTML = html;
 }
 
 function exportCSV() {
