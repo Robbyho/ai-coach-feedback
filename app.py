@@ -24,6 +24,7 @@ HEADERS = {
     "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
     "Content-Type": "application/json",
     "Accept": "application/json",
+    "Prefer": "return=representation",
 }
 
 
@@ -100,9 +101,11 @@ def submit_feedback():
         r = supabase_request("POST", "", body=record)
         if isinstance(r, dict) and r.get("error"):
             print(f"[Submit] Supabase failed, falling to memory: {r}")
-            memory_store.append({**record, "id": len(memory_store) + 1})
+            memory_store.append({**record, "id": len(memory_store) + 1, "submitted_at": datetime.now(timezone.utc).isoformat()})
             return jsonify({"ok": True, "id": len(memory_store)})
-        return jsonify({"ok": True, "id": r[0].get("id", 0) if isinstance(r, list) else 0})
+        if isinstance(r, list) and len(r) > 0:
+            return jsonify({"ok": True, "id": r[0].get("id", 0)})
+        return jsonify({"ok": True, "id": 0})
 
     memory_store.append({**record, "id": len(memory_store) + 1})
     return jsonify({"ok": True, "id": len(memory_store)})
