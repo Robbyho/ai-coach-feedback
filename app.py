@@ -25,7 +25,11 @@ def get_db():
     if not DATABASE_URL:
         return None
     try:
-        conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+        # Supabase requires SSL. Append to URL if not present.
+        url = DATABASE_URL
+        if "sslmode" not in url:
+            url += ("?" if "?" not in url else "&") + "sslmode=require"
+        conn = psycopg2.connect(url)
         return conn
     except Exception as e:
         print(f"[DB] Connection error: {e}")
