@@ -210,8 +210,22 @@ def get_responses():
 
 @app.route("/health")
 def health():
-    ok = db_healthy()
-    return jsonify({"ok": True, "database": ok, "responses": len(memory_store)})
+    # Detailed debug
+    info = {
+        "ok": True,
+        "supabase_url": SUPABASE_URL,
+        "anon_key_set": bool(SUPABASE_ANON_KEY),
+        "rest_url": REST_URL,
+        "memory_fallback": MEMORY_ONLY,
+    }
+    try:
+        r = supabase_request("GET", "", {"select": "count", "limit": "1"})
+        info["db_raw_response"] = str(r)[:200]
+        info["database"] = isinstance(r, list)
+    except Exception as e:
+        info["db_error"] = str(e)
+        info["database"] = False
+    return jsonify(info)
 
 
 # ── Startup ──
